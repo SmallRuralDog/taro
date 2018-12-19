@@ -420,10 +420,10 @@ declare namespace Taro {
 
   function getEnv(): ENV_TYPE.WEAPP | ENV_TYPE.WEB | ENV_TYPE.RN;
 
-  function render(component: Component | JSX.Element, element: Element | null)
+  function render(component: Component | JSX.Element, element: Element | null): any;
 
-  function internal_safe_set (...arg): any
-  function internal_safe_get (...arg): any
+  function internal_safe_set (...arg: any[]): any;
+  function internal_safe_get (...arg: any[]): any;
 
   function pxTransform(size: number): string
 
@@ -676,7 +676,7 @@ declare namespace Taro {
       /**
        * 上传进度回调
        */
-      progress: (UploadTaskProgressCallback) => void
+      progress: (callback: UploadTaskProgressCallback) => void
       /**
        * 终止上传任务
        */
@@ -787,6 +787,31 @@ declare namespace Taro {
        */
       header?: any
     }
+    /**
+     * 下载进度
+     */
+    type DownloadTaskProgress = {
+      progress: number
+      totalBytesWritten: number
+      totalBytesExpectedToWrite: number
+    }
+    /**
+     * 下载进度回调
+     */
+    type DownloadTaskProgressCallback = (res: DownloadTaskProgress) => any
+    /**
+     * 下载任务
+     */
+    type DownloadTask = Promise<downloadFile.Promised> & {
+      /**
+       * 下载进度回调
+       */
+      progress: (params: DownloadTaskProgressCallback) => void
+      /**
+       * 终止下载任务
+       */
+      abort: () => void
+    }
   }
   /**
    * 下载文件资源到本地，客户端直接发起一个 HTTP GET 请求，返回文件的本地临时路径。**使用前请先阅读[说明](https://developers.weixin.qq.com/miniprogram/dev/api/api-network.html)**。
@@ -839,7 +864,7 @@ declare namespace Taro {
    *     ```
    * @see https://developers.weixin.qq.com/miniprogram/dev/api/network-file.html#wxdownloadfileobject
    */
-  function downloadFile(OBJECT: downloadFile.Param): Promise<downloadFile.Promised>
+  function downloadFile(OBJECT: downloadFile.Param): downloadFile.DownloadTask
 
   namespace connectSocket {
     type Promised = {
@@ -2583,7 +2608,7 @@ declare namespace Taro {
       /**
        * 接口调用成功的回调函数 ，res = { tempThumbPath, tempVideoPath }
        */
-      type ParamPropSuccess = (res: { tempThumbPath, tempVideoPath }) => any
+      type ParamPropSuccess = (res: { tempThumbPath: string, tempVideoPath: string }) => any
       /**
        * 接口调用失败的回调函数
        */

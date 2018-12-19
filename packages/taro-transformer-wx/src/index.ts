@@ -5,12 +5,14 @@ import { prettyPrint } from 'html'
 import { transform as parse } from 'babel-core'
 import * as ts from 'typescript'
 import { Transformer } from './class'
-import { setting, findFirstIdentifierFromMemberExpression, isContainJSXElement, codeFrameError } from './utils'
+import { setting, findFirstIdentifierFromMemberExpression, isContainJSXElement, codeFrameError, isArrayMapCallExpression } from './utils'
 import * as t from 'babel-types'
 import { DEFAULT_Component_SET, INTERNAL_SAFE_GET, TARO_PACKAGE_NAME, REDUX_PACKAGE_NAME, MOBX_PACKAGE_NAME, IMAGE_COMPONENTS, INTERNAL_INLINE_STYLE, THIRD_PARTY_COMPONENTS, INTERNAL_GET_ORIGNAL, setLoopOriginal, GEL_ELEMENT_BY_ID } from './constant'
 import { Adapters, setAdapter, Adapter } from './adapter'
 import { Options, setTransformOptions } from './options'
 import { get as safeGet } from 'lodash'
+import { eslintValidation } from './eslint'
+
 const template = require('babel-template')
 
 function getIdsFromMemberProps (member: t.MemberExpression) {
@@ -145,6 +147,7 @@ export default function transform (options: Options): TransformResult {
   if (Adapter.type === Adapters.swan) {
     setLoopOriginal('privateOriginal')
   }
+  THIRD_PARTY_COMPONENTS.clear()
   setTransformOptions(options)
   const code = options.isTyped
     ? ts.transpile(options.code, {
@@ -180,7 +183,7 @@ export default function transform (options: Options): TransformResult {
     plugins: [
       require('babel-plugin-transform-flow-strip-types'),
       [require('babel-plugin-transform-define').default, options.env]
-    ].concat((process.env.NODE_ENV === 'test') ? [] : require('babel-plugin-remove-dead-code').default)
+    ].concat(process.env.ESLINT === 'false' ? [] : eslintValidation).concat((process.env.NODE_ENV === 'test') ? [] : require('babel-plugin-remove-dead-code').default)
   }).ast as t.File
   if (options.isNormal) {
     return { ast } as any
@@ -383,6 +386,16 @@ export default function transform (options: Options): TransformResult {
       const forStatement = path.findParent(isForStatement)
       if (isForStatement(forStatement)) {
         throw codeFrameError(forStatement.node, '不行使用 for 循环操作 JSX 元素，详情：https://github.com/NervJS/taro/blob/master/packages/eslint-plugin-taro/docs/manipulate-jsx-as-array.md')
+      }
+
+      const loopCallExpr = path.findParent(p => isArrayMapCallExpression(p))
+      if (loopCallExpr && loopCallExpr.isCallExpression()) {
+        const [ func ] = loopCallExpr.node.arguments
+        if (t.isArrowFunctionExpression(func) && !t.isBlockStatement(func.body)) {
+          func.body = t.blockStatement([
+            t.returnStatement(func.body)
+          ])
+        }
       }
     },
     JSXOpeningElement (path) {
