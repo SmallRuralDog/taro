@@ -388,7 +388,7 @@ dll编译过程的`entry`配置项，决定了dll文件的内容，可参考[web
 h5: {
   /* 其他配置 */
   ...,
-  libEntry: {
+  dllEntry: {
     lib: ['nervjs', '@tarojs/taro-h5', '@tarojs/router', '@tarojs/components']
   }
 }
@@ -399,6 +399,18 @@ h5: {
 extract 功能开关，开启后将使用`mini-css-extract-plugin`分离 css 文件，
 可通过`h5.miniCssExtractPluginOption`对插件进行配置。
 dev 状态默认 **关**，prod 状态默认 **开**。
+
+### h5.esnextModules
+
+配置需要额外的编译的源码模块，比如[taro-ui](https://github.com/NervJS/taro-ui)：
+
+```javascript
+h5: {
+  // 经过这一配置之后，代码中引入的处于`node_modules/taro-ui/`路径下的源码文件均会经过taro的编译处理。
+  esnextModules: ['taro-ui'],
+  ...
+}
+```
 
 ### h5.cssLoaderOption
 
